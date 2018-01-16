@@ -1,0 +1,688 @@
+/**
+ * JavaCC file
+ */
+
+options
+{
+  JDK_VERSION = "1.5";
+}
+
+PARSER_BEGIN(MyNewGrammar)
+package parse;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+
+public class MyNewGrammar
+{
+  public static int count = 0; /*四元式标号*/
+
+  public static String tip = ""; /*或语义分析结果*/
+
+  public static int ncount = 0; /*临时变量下标*/
+
+  public static void main(String args []) throws ParseException
+  {
+    FileInputStream fileStream;
+    //根据输入路径读取文件
+//    System.out.println("Enter the txt's complete Route:");
+//    BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+//    String filename = br.readLine();
+//    System.out.println(filename);
+//    fileStream = new FileInputStream(filename);
+    try
+    {
+      fileStream = new FileInputStream("C://test.txt");
+      MyNewGrammar parser = new MyNewGrammar(fileStream);
+      try
+      {
+        switch (parser.start())
+        {
+          case 0 : 
+          System.out.println("OK.");
+          break;
+          case 1 : 
+          System.out.println("Goodbye.");
+          break;
+          default : 
+          break;
+        }
+        System.out.println(tip);
+      }
+      catch (Exception e)
+      {
+        System.out.println("NOK.");
+        System.out.println(e.getMessage());
+        parser.ReInit(System.in);
+      }
+      catch (Error e)
+      {
+        System.out.println("Oops.");
+        System.out.println(e.getMessage());
+      }
+    }
+    catch (FileNotFoundException e1)
+    {	
+      e1.printStackTrace();
+    }
+  }
+}
+
+PARSER_END(MyNewGrammar)
+
+SKIP :
+{
+  " "
+| 	"\r"
+| 	"\t"
+| 	"\n"
+}
+
+TOKEN : /* OPERATORS */
+{
+  < ASSIGN : "=" >
+| < GT : ">" >
+| < LT : "<" >
+| < EQ : "==" >
+| < LE : "<=" >
+| < GE : ">=" >
+| < NE : "!=" >
+| < ADD : "++" >
+| < MINUSD : "--" >
+| < REM : "%" >
+| < AND : "&&" >
+| < OR : "||" >
+}
+
+TOKEN :
+{
+  < BOOLEAN : "boolean" >
+| < CHAR : "char" >
+| < BYTE : "byte" >
+| < SHORT : "short" >
+| < INT : "int" >
+| < LONG : "long" >
+| < FLOAT : "float" >
+| < DOUBLE : "double" >
+}
+
+TOKEN : /* OPERATORS */
+{
+  < PLUS : "+" >
+| 	< MINUS : "-" >
+| 	< MULTIPLY : "*" >
+| 	< DIVIDE : "/" >
+}
+
+TOKEN :
+{
+  < CONSTANT :
+    (< DIGIT >)+
+    (
+      "." (< DIGIT >)+
+    )? >
+| < #DIGIT : [ "0"-"9" ] >
+}
+
+TOKEN : /* RESERVED WORDS AND LITERALS */
+{
+  < BREAK : "break" >
+| < CASE : "case" >
+| < CONST : "const" >
+| < CONTINUE : "continue" >
+| < _DEFAULT : "default" >
+| < DO : "do" >
+| < TYPEDEF : "typedef" >
+| < ELSE : "else" >
+| < FOR : "for" >
+| < IF : "if" >
+| < RETURN : "return" >
+| < SWITCH : "switch" >
+| < VOID : "void" >
+| < WHILE : "while" >
+| < MAIN : "main" >
+}
+
+TOKEN :
+{
+  < LC : "(" >
+| < RC : ")" >
+| < LM : "[" >
+| < RM : "]" >
+| < LB : "{" >
+| < RB : "}" >
+}
+
+TOKEN : /* 定义标识符 */
+{
+  < ID :
+    < LETTER >
+    (
+      < LETTER >
+    | < DIGIT >
+    )* >
+| < #LETTER : [ "a"-"z", "A"-"Z", "_", "$" ] >
+}
+
+int start() :
+{}
+{ //开始符号
+  [
+    < VOID >
+  | < INT >
+  ]
+  < MAIN > < LC > < RC > block() < EOF >
+  {
+    return 0;
+  }
+| < EOF >
+  {
+    return 1;
+  }
+}
+
+void block() :
+{}
+{
+  //语句块
+  < LB >
+  (
+    statementstring()
+  )?
+  < RB >
+}
+
+void statementstring() :
+{}
+{
+  //语句串
+  statement() isstatement()
+}
+
+void isstatement() :
+{}
+{ //语句串，可以包含多个或0个语句串。
+  // 消除左递归，提取左因子
+  (
+    statementstring()
+  )?
+}
+
+void statement() :
+{}
+{
+  assignment()
+| DeclareStatement() //声明和赋值语句-->顺序语句
+| IfStatement()
+| ForStatement()
+| WhileStatement()
+}
+
+void assignment() :
+{
+  String variable [ ] = new String [ 2 ]; //其中存储place和offset两个变量。
+  String E_place;
+  String L_place;
+  String L_offset;
+}
+{
+  //赋值语句
+  variable = var() "=" E_place = Expression() ";"
+  {
+    L_place = variable [ 0 ];
+    L_offset = variable [ 1 ];
+    if (L_offset == null)
+    {
+      count++;
+      tip += count + ":\t(\t=:\t,\t" + E_place + "\t,\t_\t,\t" + L_place + ")" + "\r\n";
+    }
+    else
+    {
+      count++;
+      tip += count + ":\t(\t=:\t,\t" + E_place + "\t,\t_\t,\t" + L_place + "[" + L_offset + "]" + ")" + "\r\n";
+    }
+  }
+}
+
+void DeclareStatement() :
+{
+  int width;
+}
+{
+  < INT > < ID > id()
+  {
+    width = 8;
+  }
+| < LONG > < ID > id()
+  {
+    width = 32;
+  }
+}
+
+void id() :
+{}
+{
+  ("," < ID >)* ";"
+| ("[" < CONSTANT > "]")* ";"
+}
+
+void IfStatement() :
+{
+  int j, j1;
+}
+{
+  < IF > < LC > Condition() < RC >
+  {
+    count++;
+    j = count;
+    tip += count + ":\t(\tj\t,\t_\t,\t_\t,\t" + "#)" + "\r\n";
+    tip = tip.replaceAll("j2", (count + 1) + "");
+  }
+  < LB > isstatement() < RB >
+  {
+    tip = tip.replaceAll("#", (count + 2) + "");
+    count++;
+    j = count;
+    tip += count + ":\t(\tJ\t,\t_\t,\t_\t,\t" + j + "#)" + "\r\n";
+  }
+  (
+    < ELSE >
+    (
+      statement()
+    |
+      (
+        < LB > isstatement() < RB >
+      )
+    )
+  )*
+  {
+    tip = tip.replaceFirst(j + "#", (count + 1) + "");
+  }
+}
+
+void WhileStatement() :
+{
+  Token node;
+  int j1;
+  int j2;
+  int next;
+  int next1;
+}
+{
+  < WHILE > < LC >
+  {
+    next1 = count + 1;
+  }
+  Condition() < RC >
+  {
+    count++;
+    j1 = count;
+    tip += count + ":\t(\tJ\t,\t_\t,\t_\t,\t" + j1 + "#)" + "\r\n";
+  }
+  < LB > statement() < RB >
+  {
+    count++;
+    tip += count + ":\t(\tJ\t,\t_\t,\t_\t,\t" + next1 + ")" + "\r\n";
+    tip = tip.replaceFirst(j1 + "#", (count + 1) + "");
+  }
+}
+
+int Condition() : //条件
+{
+  Token node;
+  int next;
+  String result;
+  String middle;
+}
+{
+  result = Expression()
+  (
+    node = "<" middle = Expression()
+    {
+      count++;
+      next = count + 1;
+      tip += count + ":\t(\tj<\t,\t" + result + "\t,\t" + middle + "\t,\t" + (next + 1) + ")" + "\r\n";
+    }
+  | node = ">" middle = Expression()
+    {
+      count++;
+      next = count + 1;
+      tip += count + ":\t(\tj>\t,\t" + result + "\t,\t" + middle + "\t,\t" + (next + 1) + ")" + "\r\n";
+    }
+  | node = ">=" middle = Expression()
+    {
+      count++;
+      next = count + 1;
+      tip += count + ":\t(\tj>=\t,\t" + result + "\t,\t" + middle + "\t,\t" + (next + 1) + ")" + "\r\n";
+    }
+  | node = "<=" middle = Expression()
+    {
+      count++;
+      next = count + 1;
+      tip += count + ":\t(\tj<=\t,\t" + result + "\t,\t" + middle + "\t,\t" + (next + 1) + ")" + "\r\n";
+    }
+  )
+  {
+    return next;
+  }
+}
+
+void ForStatement() :
+{
+  Token node;
+  int j1;
+  int j2;
+  int next;
+  int next1;
+}
+{
+  < FOR > "("
+  {
+    next1 = count + 2;
+  }	
+  (
+    ForFirst()
+  )?
+  ";"	
+  (
+    ForSecond()
+  )?
+  ";"
+  {
+    count++;
+    j1 = count;
+    tip += + count + ":\t(\tj\t,\t_\t,\t_\t,\t" + j1 + "#)" + "\r\n";
+  }
+  (
+    ForThird()
+  )?
+  ")" 
+  < LB > statement() < RB >
+  {
+    count++;
+    tip += count + ":\t(\tj\t,\t_\t,\t_\t,\t" + next1 + ")" + "\r\n";
+    tip = tip.replaceFirst(j1 + "#", (count + 1) + "");
+  }
+}
+
+void ForFirst() :
+{	
+  Token node;
+  String temp = "";
+  String temp1 = "";
+}
+{
+  (
+    < INT >
+  | < LONG >
+  )?
+  temp = < ID >.image
+  (
+    "=" temp1 = Expression()
+  )?
+  {
+    count++;
+    tip += count + ":\t(\t:=\t,\t" + temp1 + "\t,\t_\t,\t" + temp + ")" + "\r\n";
+  }
+}
+
+int ForSecond() :
+{
+  //Expression()("<"|">"|">="|"<=")Expression()
+  Token node;
+  int next;
+  String result;
+  String middle;
+}
+{
+  result = Expression()
+  (
+    node = "<" middle = Expression()
+    {
+      count++;
+      next = count + 1;
+      tip += count + ":\t(\tj<\t,\t" + result + "\t,\t" + middle + "\t,\t" + (next + 1) + ")" + "\r\n";
+    }
+  | node = ">" middle = Expression()
+    {
+      count++;
+      next = count + 1;
+      tip += count + ":\t(\tj>\t,\t" + result + "\t,\t" + middle + "\t,\t" + (next + 1) + ")" + "\r\n";
+    }
+  | node = ">=" middle = Expression()
+    {
+      count++;
+      next = count + 1;
+      tip += count + ":\t(\tj>=\t,\t" + result + "\t,\t" + middle + "\t,\t" + (next + 1) + ")" + "\r\n";
+    }
+  | node = "<=" middle = Expression()
+    {
+      count++;
+      next = count + 1;
+      tip += count + ":\t(\tj<=\t,\t" + result + "\t,\t" + middle + "\t,\t" + (next + 1) + ")" + "\r\n";
+    }
+  )
+  {
+    return next;
+  }
+}
+
+void ForThird() :
+{
+  Token node;
+  String temp = "";
+  String temp1 = "";
+}
+{
+  temp = < ID >.image
+  (
+    < ADD >
+    {
+      count++;
+      tip += count + ":\t(\t++\t,\t" + temp + "\t,\t_\t,\t" + temp + ")" + "\r\n";
+    }
+  | < MINUSD >
+    {
+      count++;
+      tip += count + ":\t(\t--\t,\t" + temp + "\t,\t_\t,\t" + temp + ")" + "\r\n";
+    }
+  | "=" temp1 = Expression()
+    {
+      count++;
+      tip += count + ":\t(\t:=\t,\t" + temp1 + "\t,\t_\t,\t" + temp + ")" + "\r\n";
+    }
+  )
+}
+
+String Expression() : //表达式
+{
+  Token node;
+  String result;
+  String middle;
+  String temp = "";
+}
+{
+  result = Term()
+  {
+    temp = result;
+  }
+  (
+    < PLUS > middle = Term()
+    {
+      count++;
+      temp = "T" + ncount;
+      ncount++;
+      tip += count + ":\t(\t+\t,\t" + result + "\t,\t" + middle + "\t,\t" + temp + ")" + "\r\n";
+      result = temp;
+    }
+  | < MINUS > middle = Term()
+    {
+      count++;
+      temp = "T" + ncount;
+      ncount++;
+      tip += count + ":\t(\t-\t,\t" + result + "\t,\t" + middle + "\t,\t" + temp + ")" + "\r\n";
+      result = temp;
+    }
+  )*
+  {
+    return temp;
+  }
+}
+
+String Term() :
+{
+  Token node;
+  String result;
+  String middle;
+  String temp = "";
+}
+{
+  result = unary()
+  {
+    temp = result;
+  }
+  (
+    (
+      < MULTIPLY > middle = unary()
+      {
+        count++;
+        temp = "T" + ncount;
+        ncount++;
+        tip += count + ":\t(\t*\t,\t" + result + "\t,\t" + middle + "\t,\t" + temp + ")" + "\r\n";
+        result = temp;
+      }
+    | < DIVIDE > middle = unary()
+      {
+        count++;
+        temp = "T" + ncount;
+        ncount++;
+        tip += count + ":\t(\t/\t,\t" + result + "\t,\t" + middle + "\t,\t" + temp + ")" + "\r\n";
+        result = temp;	
+      }
+    )
+  )*
+  {
+    return temp;
+  }
+}
+
+String unary() :
+{
+  String str;
+}
+{
+  // str= element(){return -Double.parseDouble(str)+"";}
+  str = element()
+  {
+    return str;
+  }
+}
+
+String element() :
+{
+  String str;
+  Token node;
+  String L_place;
+  String L_offset;
+  String variable [ ] = new String [ 2 ];
+  String temp;
+}
+{
+  node = < CONSTANT >
+  {
+    return node.image;
+  }
+| < LC > str = Expression() < RC >
+  {
+    return str;
+  }
+| variable = var()
+  {
+    L_place = variable [ 0 ];
+    L_offset = variable [ 1 ];
+    if (L_offset == null)
+    {
+      return L_place;
+    }
+    else
+    {
+      temp = "T" + ncount;
+      ncount++;
+      count++;
+      tip += count + ":\t(\t=:\t,\t" + L_place + "[" + L_offset + "]" + "\t,\t_\t,\t" + temp + ")" + "\r\n";
+      return temp;
+    }
+  }
+}
+
+String [ ] var() :
+{
+  String variable [ ] = new String [ 2 ];
+  String L_place;
+  String L_offset;
+}
+{
+  L_place = < ID >.image L_offset = array()
+  {
+    variable [ 0 ] = L_place;
+    variable [ 1 ] = L_offset;
+    return variable;
+  }
+}
+
+String array() :
+{
+  String L_offset;
+  String E_place;
+  String base;
+  String temp;
+}
+{
+  "[" E_place = Expression()
+  {
+    base = E_place;
+  }
+  L_offset = List(base)
+  {
+    return L_offset;
+  }
+| L_offset = kong()
+  {
+    return L_offset;
+  }
+}
+
+String kong() :
+{}
+{	
+  {
+    return null;
+  }
+}
+
+String List(String base) : //四元式
+{
+  String base1 = base;
+  String E_place;
+  String temp = null;
+  String L_offset;
+}
+{
+  "," E_place = Expression()
+  {
+    temp = "T" + ncount;
+    ncount++;
+    count++;
+    tip += count + ":\t(\t*\t,\t" + base1 + "\t,\t8\t,\t" + temp + ")" + "\r\n";
+    count++;
+    tip += count + ":\t(\t+\t,\t" + E_place + "\t,\t" + temp + "\t,\t" + temp + ")" + "\r\n";
+  }
+  L_offset = List(temp)
+  {
+    return L_offset;
+  }
+| "]"
+  {
+    L_offset = base1;
+    return L_offset;
+  }
+}

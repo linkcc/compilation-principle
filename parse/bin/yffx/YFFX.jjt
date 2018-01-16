@@ -1,0 +1,258 @@
+/**
+ * JJTree template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{
+  static = true;
+}
+
+PARSER_BEGIN(YFFX)
+
+package yffx;
+import java.io.*;
+
+public class YFFX
+{
+  public static void main(String args []) throws ParseException, IOException
+  {
+    FileInputStream fileStream;
+    try
+    {
+      System.out.println("Enter the txt's complete Route:");
+      BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
+      String filename = br.readLine();
+      //System.out.println(filename);
+      fileStream = new FileInputStream(filename);
+      YFFX parser = new YFFX(fileStream);
+      try
+      {
+        SimpleNode n = parser.Start();
+        n.dump("");
+        System.out.println("Thank you.");
+      }
+      catch (Exception e)
+      {
+        System.out.println("Oops.");
+        System.out.println(e.getMessage());
+      }
+    }
+    catch (Error e)
+    {
+      System.out.println("error.");
+      System.out.println(e.getMessage());
+    }
+  }
+}
+
+PARSER_END(YFFX)
+
+SKIP :
+{
+  " "
+| "\t"
+| "\n"
+| "\r"
+}
+
+TOKEN : /* OPERATORS */
+{
+  //  < OPERATOR : [ "+", "-", "*", "/" ] >
+  < PLUS : "+" >
+| 	< MINUS : "-" >
+| 	< MULTIPLY : "*" >
+| 	< DIVIDE : "/" >
+}
+
+TOKEN :
+{
+  < NUM : (< DIGIT >)+ >
+| < #DIGIT : [ "0"-"9" ] >
+}
+
+TOKEN :
+{
+  < MAIN : "main" >	
+| < VOID : "void" >
+| < WHILE : "while" >
+| < ASSIGN : "=" >
+| < IF : "if" >
+| < ELSE : "else" >
+| < INT : "int" >
+| < DOUBLE : "double" >
+| < FLOAT : "float" >
+| < DO : "do" >
+}
+
+TOKEN : /* ±êÊ¶·û */
+{
+  < IDENTIFIER :
+    < LETTER >
+    (
+      < LETTER >
+    | < DIGIT >
+    )* >
+| 	< LETTER : [ "_", "a"-"z", "A"-"Z" ] >
+}
+
+TOKEN :
+{
+  < RELATION :
+    < GREAT >
+  | < LOWER >
+  | < GREATE >
+  | < LOWERW >
+  | < EQUAL >
+  | < UNEQUAL > >
+| < #GREAT : ">" >
+| < #LOWER : "<" >
+| < #GREATE : ">=" >
+| < #LOWERW : "<=" >
+| < #EQUAL : "==" >
+| < #UNEQUAL : "!=" >
+}
+
+TOKEN :
+{
+  < LC : "(" >
+| < RC : ")" >
+| < LM : "[" >
+| < RM : "]" >
+| < LB : "{" >
+| < RB : "}" >
+}
+
+SimpleNode Start() :
+{}
+{
+  Procedure()
+  {
+    return jjtThis;
+  }
+}
+
+void Procedure() :
+{}
+{
+  < VOID > < MAIN > < LC > < RC > < LB >
+  (
+    StatementBlock()
+  )*
+  < RB >
+}
+
+void StatementBlock() :
+{}
+{
+  Statement()
+| < LB >
+  (
+    StatementBlock()
+  )*
+  < RB >
+}
+
+void Statement() :
+{}
+{
+  SequenceStatement()
+| ConditionalStatement()
+| CircularStatement()
+}
+
+void SequenceStatement() :
+{}
+{
+  [
+    DeclarativeStatement()
+  | AssignmentStatement()
+  ]
+  ";"
+}
+
+void DeclarativeStatement() :
+{}
+{
+  (
+    < INT >
+  | < DOUBLE >
+  | < FLOAT >
+  )
+  < IDENTIFIER > ("," < IDENTIFIER >)*
+}
+
+void AssignmentStatement() :
+{}
+{
+  < IDENTIFIER > < ASSIGN > Expression()
+}
+
+void ConditionalStatement() :
+{}
+{
+  < IF > Condition() StatementBlock()( < ELSE>StatementBlock())*
+}
+
+void CircularStatement() :
+{}
+{
+  < WHILE > Condition() StatementBlock()
+}
+
+void Condition() :
+{}
+{
+  < LC > Expression() < RELATION > Expression() < RC >
+}
+
+void Expression() :
+{}
+{
+  AdditiveExpression()
+}
+
+void AdditiveExpression() :
+{}
+{
+  MultiplicativeExpression()
+  (
+    (
+      "+"
+    | "-"
+    )
+    MultiplicativeExpression()
+  )*
+}
+
+void MultiplicativeExpression() :
+{}
+{
+  UnaryExpression()
+  (
+    (
+      "*"
+    | "/"
+    | "%"
+    )
+    UnaryExpression()
+  )*
+}
+
+void UnaryExpression() :
+{}
+{
+  "(" Expression() ")"
+| Identifier()
+| Integer()
+}
+
+void Identifier() :
+{}
+{
+  < IDENTIFIER >
+}
+
+void Integer() :
+{}
+{
+  < NUM >
+}
