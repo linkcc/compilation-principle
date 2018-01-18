@@ -578,7 +578,7 @@ void WhileStatement() :
     j1 = count;
     tip += count + ":\t(\tJ\t,\t_\t,\t_\t,\t" + j1 + "#)" + "\r\n";
   }
-  < LB > statement() < RB >/*@bgen(jjtree)*/
+  < LB > isstatement() < RB >/*@bgen(jjtree)*/
   {
     jjtree.closeNodeScope(jjtn000, true);
     jjtc000 = false;

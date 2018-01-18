@@ -534,7 +534,7 @@ public class MyNewGrammar/*@bgen(jjtree)*/implements MyNewGrammarTreeConstants, 
     j1 = count;
     tip += count + ":\u005ct(\u005ctJ\u005ct,\u005ct_\u005ct,\u005ct_\u005ct,\u005ct" + j1 + "#)" + "\u005cr\u005cn";
       jj_consume_token(LB);
-      statement();
+      isstatement();
       jj_consume_token(RB);
     jjtree.closeNodeScope(jjtn000, true);
     jjtc000 = false;
